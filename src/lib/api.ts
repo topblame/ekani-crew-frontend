@@ -252,7 +252,7 @@ export interface StartMbtiTestResponse {
 }
 
 export async function startMbtiTest(userId: string): Promise<StartMbtiTestResponse> {
-  return apiFetch<StartMbtiTestResponse>('/mbti/start', {
+  return apiFetch<StartMbtiTestResponse>('/mbti-test/start', {
     method: 'POST',
     body: JSON.stringify({ user_id: userId }),
   });
