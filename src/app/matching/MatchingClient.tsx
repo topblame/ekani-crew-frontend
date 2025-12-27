@@ -44,11 +44,16 @@ export default function MatchingClient() {
         mbti: profile.mbti,
       });
 
-      if (response.status === 'matched') {
-        // 즉시 매칭 성공
+      if (response.status === 'matched' || response.status === 'already_matched') {
+        // 즉시 매칭 성공 또는 이미 매칭됨
         setStatus('matched');
         setMatchedMbti(response.partner?.mbti || '???');
         setMatchedRoomId(response.roomId || null);
+      } else if (response.status === 'already_chatting') {
+        // 이미 채팅 중 - 바로 채팅방으로 이동
+        if (response.roomId) {
+          router.push(`/chat/${response.roomId}`);
+        }
       } else {
         // waiting 또는 already_waiting
         setStatus('waiting');

@@ -174,11 +174,19 @@ export default function ChatListClient() {
         setWaitCount(response.wait_count || 0);
 
         // 매칭 성공!
-        if (response.status === 'matched') {
+        if (response.status === 'matched' || response.status === 'already_matched') {
           setMatchingStatus('matched');
           setMatchedRoomId(response.roomId || null);
           setMatchedMbti(response.partner?.mbti || '???');
           void loadChatRooms();
+          return;
+        }
+
+        // 이미 채팅 중 - 바로 채팅방으로 이동
+        if (response.status === 'already_chatting') {
+          if (response.roomId) {
+            router.push(`/chat/${response.roomId}`);
+          }
           return;
         }
 
