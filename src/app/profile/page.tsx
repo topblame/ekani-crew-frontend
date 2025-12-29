@@ -37,7 +37,7 @@ export default function ProfilePage() {
     try {
       await updateProfile({ mbti, gender });
       alert('프로필이 저장되었습니다.');
-      router.push('/consult');
+      router.push('/mbti-test');
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);
       alert('저장에 실패했습니다. 다시 시도해주세요.');

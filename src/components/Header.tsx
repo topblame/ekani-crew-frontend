@@ -28,12 +28,6 @@ export default function Header() {
           </Link>
           <nav className="flex items-center gap-2">
             <Link
-              href="/consult"
-              className="px-4 py-2 rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 text-sm font-medium transition"
-            >
-              상담하기
-            </Link>
-            <Link
               href="/convert"
               className="px-4 py-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 text-sm font-medium transition"
             >

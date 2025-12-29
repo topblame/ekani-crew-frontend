@@ -12,15 +12,15 @@ export default function Home() {
           상대방의 속마음을 MBTI로 분석해드려요
         </p>
         <Link
-          href="/consult"
+          href="/mbti-test"
           className="inline-block px-8 py-4 bg-gradient-to-r from-pink-400 to-purple-400 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
         >
-          무료 상담 시작하기
+          무료 MBTI 검사 시작하기
         </Link>
       </section>
 
       {/* 서비스 카드 */}
-      <section className="grid md:grid-cols-3 gap-6">
+      <section className="grid md:grid-cols-2 gap-6">
         {/* MBTI 검사 - 메인 카드 */}
         <Link href="/mbti-test" className="block bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-8 shadow-sm hover:shadow-lg hover:scale-[1.02] transition border-2 border-indigo-200 relative overflow-hidden cursor-pointer">
           <div className="absolute top-3 right-3 px-2 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full">
@@ -36,18 +36,6 @@ export default function Home() {
           </div>
           <span className="text-indigo-500 font-medium">
             무료 검사하기 →
-          </span>
-        </Link>
-
-        <Link href="/consult" className="block bg-white rounded-3xl p-8 shadow-sm hover:shadow-lg hover:scale-[1.02] transition cursor-pointer">
-          <div className="text-4xl mb-4">💬</div>
-          <h2 className="text-xl font-bold text-pink-500 mb-2">MBTI 상담</h2>
-          <p className="text-gray-500 mb-4">
-            나의 MBTI에 맞는 맞춤형 관계 조언을 받아보세요.
-            5턴의 대화로 깊이 있는 분석을 제공합니다.
-          </p>
-          <span className="text-pink-400 font-medium">
-            상담받기 →
           </span>
         </Link>
 
@@ -70,7 +58,7 @@ export default function Home() {
           눈치코치가 뭐야?
         </h2>
         <p className="text-center text-gray-500 text-sm mb-8">
-          MBTI 검사부터 상담, 메시지 변환, 매칭까지<br />
+          MBTI 검사부터 메시지 변환, 매칭까지<br />
           AI가 당신의 소통을 도와드려요
         </p>
         <div className="space-y-4">
@@ -91,10 +79,10 @@ export default function Home() {
             <div>
               <h3 className="font-bold text-pink-600 mb-2">폼 말고 대화로</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                "상대방 MBTI 선택, 상황 선택, 관계 유형 선택..." 이런 딱딱한 폼 입력은 그만!
-                친구한테 털어놓듯 AI와 자연스럽게 대화하면서 고민을 나눠보세요.
-                AI가 맥락을 파악해서 알아서 필요한 질문을 해줘요.
-                5턴의 대화가 끝나면 상황 분석, 해결 방안, 주의사항까지 종합 리포트로 정리해드려요.
+                "동의/비동의" 버튼만 누르는 딱딱한 검사는 그만!
+                친구한테 털어놓듯 AI와 자연스럽게 대화하면서 MBTI를 알아보세요.
+                AI가 맥락을 파악해서 알아서 맞춤 질문을 생성해줘요.
+                24개의 질문이 끝나면 각 차원별 비율까지 상세하게 분석해드려요.
               </p>
             </div>
           </div>
@@ -147,11 +135,11 @@ export default function Home() {
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">💼</span>
               <span className="font-bold text-purple-600">ENFP</span>
-              <span className="text-xs text-gray-400">상담 이용</span>
+              <span className="text-xs text-gray-400">메시지 변환 이용</span>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed mb-2">
-              "ISTJ 팀장님이랑 소통이 너무 힘들었는데,
-              상담받고 나서 어떻게 보고해야 하는지 감이 잡혔어요.
+              "ISTJ 팀장님한테 보고할 때 어떻게 말해야 할지 몰랐는데,
+              여기서 변환한 메시지로 보내니까 바로 OK 받았어요.
               요즘 팀장님이 제 보고서 칭찬해주세요!"
             </p>
             <div className="text-xs text-purple-400">⭐⭐⭐⭐⭐</div>
