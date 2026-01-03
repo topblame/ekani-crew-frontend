@@ -168,6 +168,9 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 한글 조합 중이면 무시 (IME 이중 입력 방지)
+    if (e.nativeEvent.isComposing) return;
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
