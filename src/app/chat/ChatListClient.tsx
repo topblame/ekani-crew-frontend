@@ -7,7 +7,9 @@ import {
   requestMatch,
   cancelMatch,
   getMyChatRooms,
+  getMatchWebSocketUrl,
   MatchRequestResponse,
+  MatchNotification,
   ChatRoomPreview,
 } from '@/lib/api';
 
@@ -58,15 +60,21 @@ export default function ChatListClient() {
   // refs
   const previousRoomCountRef = useRef<number>(0);
   const matchingStatusRef = useRef<MatchingStatus>('idle');
+  const matchWsRef = useRef<WebSocket | null>(null);
 
   // matchingStatus 변경 시 ref도 업데이트
   useEffect(() => {
     matchingStatusRef.current = matchingStatus;
   }, [matchingStatus]);
 
-  // 페이지 이탈 시 매칭 취소 (cleanup)
+  // 페이지 이탈 시 매칭 취소 및 WebSocket 해제 (cleanup)
   useEffect(() => {
     return () => {
+      // WebSocket 연결 해제
+      if (matchWsRef.current) {
+        matchWsRef.current.close();
+        matchWsRef.current = null;
+      }
       // 매칭 대기 중일 때만 취소
       if (matchingStatusRef.current === 'waiting' && user?.id && profile?.mbti) {
         cancelMatch({ user_id: user.id, mbti: profile.mbti }).catch(() => {
@@ -136,6 +144,59 @@ export default function ChatListClient() {
   // sleep 함수
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+  // WebSocket으로 매칭 알림 수신 처리
+  const handleMatchNotification = useCallback((notification: MatchNotification) => {
+    console.log('[매칭] WebSocket 알림 수신:', notification);
+
+    if (notification.status === 'matched') {
+      setMatchingStatus('matched');
+      setMatchedRoomId(notification.roomId);
+      setMatchedMbti(notification.partner.mbti);
+      void loadChatRooms();
+
+      // WebSocket 연결 해제
+      if (matchWsRef.current) {
+        matchWsRef.current.close();
+        matchWsRef.current = null;
+      }
+    }
+  }, [loadChatRooms]);
+
+  // WebSocket 연결 설정
+  const connectMatchWebSocket = useCallback((userId: string) => {
+    // 기존 연결이 있으면 해제
+    if (matchWsRef.current) {
+      matchWsRef.current.close();
+    }
+
+    const wsUrl = getMatchWebSocketUrl(userId);
+    console.log('[매칭] WebSocket 연결 시도:', wsUrl);
+
+    const ws = new WebSocket(wsUrl);
+    matchWsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('[매칭] WebSocket 연결됨');
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data: MatchNotification = JSON.parse(event.data);
+        handleMatchNotification(data);
+      } catch (err) {
+        console.error('[매칭] WebSocket 메시지 파싱 실패:', err);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('[매칭] WebSocket 에러:', error);
+    };
+
+    ws.onclose = () => {
+      console.log('[매칭] WebSocket 연결 종료');
+    };
+  }, [handleMatchNotification]);
+
   const handleStartMatching = async () => {
     console.log('[매칭] 시작 - user:', user, 'profile:', profile);
 
@@ -148,6 +209,9 @@ export default function ChatListClient() {
     setMatchingError(null);
     setMatchingStatus('waiting');
     matchingStatusRef.current = 'waiting';
+
+    // WebSocket 연결 (매칭 알림 수신용)
+    connectMatchWebSocket(user.id);
 
     let levelIndex = 0;
 
@@ -173,12 +237,18 @@ export default function ChatListClient() {
         // 대기 인원 업데이트
         setWaitCount(response.wait_count || 0);
 
-        // 매칭 성공!
+        // 매칭 성공! (HTTP 응답으로 받은 경우 - 내가 상대를 찾은 경우)
         if (response.status === 'matched' || response.status === 'already_matched') {
           setMatchingStatus('matched');
           setMatchedRoomId(response.roomId || null);
           setMatchedMbti(response.partner?.mbti || '???');
           void loadChatRooms();
+
+          // WebSocket 연결 해제
+          if (matchWsRef.current) {
+            matchWsRef.current.close();
+            matchWsRef.current = null;
+          }
           return;
         }
 
@@ -196,6 +266,12 @@ export default function ChatListClient() {
       setMatchingError('매칭 요청에 실패했습니다. 다시 시도해주세요.');
       setMatchingStatus('idle');
 
+      // WebSocket 연결 해제
+      if (matchWsRef.current) {
+        matchWsRef.current.close();
+        matchWsRef.current = null;
+      }
+
       // 에러 발생 시 대기열 정리
       try {
         await cancelMatch({ user_id: user.id, mbti: profile.mbti });
@@ -211,6 +287,12 @@ export default function ChatListClient() {
     if (!user?.id || !profile?.mbti) return;
 
     setIsMatchingLoading(true);
+
+    // WebSocket 연결 해제
+    if (matchWsRef.current) {
+      matchWsRef.current.close();
+      matchWsRef.current = null;
+    }
 
     try {
       await cancelMatch({

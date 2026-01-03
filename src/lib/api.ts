@@ -389,12 +389,34 @@ export async function getChatHistory(roomId: string): Promise<ChatHistoryRespons
 }
 
 /**
- * WebSocket URL 생성
+ * 채팅 WebSocket URL 생성
  */
 export function getChatWebSocketUrl(roomId: string): string {
   // API_BASE_URL에서 http -> ws로 변경
   const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
   return `${wsUrl}/ws/chat/${roomId}`;
+}
+
+/**
+ * 매칭 알림 WebSocket URL 생성
+ */
+export function getMatchWebSocketUrl(userId: string): string {
+  const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
+  return `${wsUrl}/ws/match/${userId}`;
+}
+
+/**
+ * 매칭 알림 메시지 타입
+ */
+export interface MatchNotification {
+  status: 'matched';
+  message: string;
+  roomId: string;
+  my_mbti: string;
+  partner: {
+    user_id: string;
+    mbti: string;
+  };
 }
 
 /**
