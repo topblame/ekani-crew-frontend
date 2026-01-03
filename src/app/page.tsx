@@ -28,12 +28,10 @@ export default function Home() {
           </div>
           <div className="text-4xl mb-4">🧠</div>
           <h2 className="text-xl font-bold text-indigo-600 mb-2">MBTI 검사</h2>
-          <p className="text-gray-600 mb-2">
-            기존에 알던 것과는 다른 방식으로 나의 MBTI를 알아보세요.
+          <p className="text-gray-600 mb-4">
+            객관식이 아닌 채팅 형식으로 진행돼요.
+            내 답변에 따라 AI가 맞춤 질문을 생성합니다.
           </p>
-          <div className="text-xs text-indigo-600 bg-indigo-100 rounded-lg p-2 mb-4">
-            <span className="font-semibold">차별점:</span> 객관식이 아닌 채팅 형식으로, 내 답변에 따라 맞춤 질문을 생성합니다
-          </div>
           <span className="text-indigo-500 font-medium">
             무료 검사하기 →
           </span>
@@ -48,6 +46,48 @@ export default function Home() {
           </p>
           <span className="text-purple-400 font-medium">
             변환하기 →
+          </span>
+        </Link>
+
+        <Link href="/community/posts" className="block bg-gradient-to-br from-pink-50 to-rose-50 rounded-3xl p-8 shadow-sm hover:shadow-lg hover:scale-[1.02] transition border-2 border-pink-200 relative overflow-hidden cursor-pointer">
+          <div className="absolute top-3 right-3 px-2 py-1 bg-pink-500 text-white text-xs font-bold rounded-full">
+            NEW
+          </div>
+          <div className="text-4xl mb-4">📝</div>
+          <h2 className="text-xl font-bold text-pink-600 mb-2">커뮤니티</h2>
+          <p className="text-gray-600 mb-4">
+            MBTI에 대한 이야기를 나눠보세요.
+            주간 토픽에 참여하거나 자유롭게 글을 올릴 수 있어요.
+          </p>
+          <span className="text-pink-500 font-medium">
+            게시판 가기 →
+          </span>
+        </Link>
+
+        <Link href="/community/balance" className="block bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-8 shadow-sm hover:shadow-lg hover:scale-[1.02] transition border-2 border-amber-200 relative overflow-hidden cursor-pointer">
+          <div className="absolute top-3 right-3 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
+            NEW
+          </div>
+          <div className="text-4xl mb-4">⚖️</div>
+          <h2 className="text-xl font-bold text-amber-600 mb-2">밸런스 게임</h2>
+          <p className="text-gray-600 mb-4">
+            둘 중 하나를 골라야 한다면? MBTI별로 선택이 다를까요?
+            투표하고 다른 사람들의 선택도 확인해보세요.
+          </p>
+          <span className="text-amber-500 font-medium">
+            참여하기 →
+          </span>
+        </Link>
+
+        <Link href="/matching" className="block bg-gradient-to-br from-rose-50 to-pink-50 rounded-3xl p-8 shadow-sm hover:shadow-lg hover:scale-[1.02] transition cursor-pointer md:col-span-2">
+          <div className="text-4xl mb-4">💕</div>
+          <h2 className="text-xl font-bold text-rose-500 mb-2">MBTI 매칭</h2>
+          <p className="text-gray-600 mb-4">
+            같은 MBTI를 가진 사람들과 익명으로 대화해보세요!
+            매칭이 되면 1:1 채팅방이 생성되고, 부담 없이 대화를 나눌 수 있어요.
+          </p>
+          <span className="text-rose-400 font-medium">
+            매칭 시작하기 →
           </span>
         </Link>
       </section>
@@ -74,18 +114,6 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-pink-50">
-            <span className="text-3xl">🗣️</span>
-            <div>
-              <h3 className="font-bold text-pink-600 mb-2">폼 말고 대화로</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                "동의/비동의" 버튼만 누르는 딱딱한 검사는 그만!
-                친구한테 털어놓듯 AI와 자연스럽게 대화하면서 MBTI를 알아보세요.
-                AI가 맥락을 파악해서 알아서 맞춤 질문을 생성해줘요.
-                24개의 질문이 끝나면 각 차원별 비율까지 상세하게 분석해드려요.
-              </p>
-            </div>
-          </div>
           <div className="flex items-start gap-4 p-5 rounded-2xl bg-purple-50">
             <span className="text-3xl">📋</span>
             <div>
@@ -94,7 +122,29 @@ export default function Home() {
                 "INTJ는 논리적이에요~" 같은 뻔한 이론 설명은 이제 지겨우시죠?
                 눈치코치는 복사해서 바로 보낼 수 있는 실제 메시지를 만들어줘요.
                 공손한 버전, 캐주얼한 버전, 간결한 버전 3가지로 제공되니까
-                상황에 맞게 골라서 쓰시면 돼요. 각 버전마다 왜 이 표현이 효과적인지 해설도 함께!
+                상황에 맞게 골라서 쓰시면 돼요.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-pink-50">
+            <span className="text-3xl">📝</span>
+            <div>
+              <h3 className="font-bold text-pink-600 mb-2">MBTI 커뮤니티</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                MBTI에 대한 다양한 이야기를 나눠보세요!
+                매주 새로운 토픽이 올라오고, 자유롭게 글을 작성할 수 있어요.
+                같은 MBTI 사람들은 어떻게 생각하는지 댓글로 소통해보세요.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-amber-50">
+            <span className="text-3xl">⚖️</span>
+            <div>
+              <h3 className="font-bold text-amber-600 mb-2">밸런스 게임</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                둘 중 하나만 골라야 한다면? 재미있는 선택지에 투표해보세요.
+                MBTI별로 어떤 선택을 하는지 통계도 볼 수 있어요.
+                내 선택이 다수인지 소수인지 확인해보는 재미!
               </p>
             </div>
           </div>
@@ -131,19 +181,6 @@ export default function Home() {
             </p>
             <div className="text-xs text-pink-400">⭐⭐⭐⭐⭐</div>
           </div>
-          <div className="p-5 rounded-2xl bg-purple-50">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">💼</span>
-              <span className="font-bold text-purple-600">ENFP</span>
-              <span className="text-xs text-gray-400">메시지 변환 이용</span>
-            </div>
-            <p className="text-sm text-gray-600 leading-relaxed mb-2">
-              "ISTJ 팀장님한테 보고할 때 어떻게 말해야 할지 몰랐는데,
-              여기서 변환한 메시지로 보내니까 바로 OK 받았어요.
-              요즘 팀장님이 제 보고서 칭찬해주세요!"
-            </p>
-            <div className="text-xs text-purple-400">⭐⭐⭐⭐⭐</div>
-          </div>
           <div className="p-5 rounded-2xl bg-indigo-50">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">🧠</span>
@@ -157,9 +194,33 @@ export default function Home() {
             </p>
             <div className="text-xs text-indigo-400">⭐⭐⭐⭐⭐</div>
           </div>
+          <div className="p-5 rounded-2xl bg-amber-50">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">⚖️</span>
+              <span className="font-bold text-amber-600">ENTP</span>
+              <span className="text-xs text-gray-400">밸런스 게임 이용</span>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
+              "밸런스 게임 너무 재밌어요ㅋㅋ MBTI별 통계 보는 게 신기함.
+              역시 T들은 다 비슷하게 고르더라고요. 공감 100%"
+            </p>
+            <div className="text-xs text-amber-400">⭐⭐⭐⭐⭐</div>
+          </div>
+          <div className="p-5 rounded-2xl bg-emerald-50">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">📝</span>
+              <span className="font-bold text-emerald-600">ENFJ</span>
+              <span className="text-xs text-gray-400">커뮤니티 이용</span>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
+              "토픽글 보면서 다른 MBTI분들 생각 읽는 게 너무 재밌어요.
+              댓글로 소통하다 보면 시간 가는 줄 모름ㅋㅋ"
+            </p>
+            <div className="text-xs text-emerald-400">⭐⭐⭐⭐⭐</div>
+          </div>
           <div className="p-5 rounded-2xl bg-rose-50">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">👥</span>
+              <span className="text-2xl">💕</span>
               <span className="font-bold text-rose-600">INFJ</span>
               <span className="text-xs text-gray-400">매칭 이용</span>
             </div>
@@ -168,6 +229,18 @@ export default function Home() {
               평소에 공감 받기 힘들었는데 여기서 위로 많이 받았습니다 ㅠㅠ"
             </p>
             <div className="text-xs text-rose-400">⭐⭐⭐⭐⭐</div>
+          </div>
+          <div className="p-5 rounded-2xl bg-purple-50">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">💼</span>
+              <span className="font-bold text-purple-600">ENFP</span>
+              <span className="text-xs text-gray-400">메시지 변환 이용</span>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
+              "ISTJ 팀장님한테 보고할 때 어떻게 말해야 할지 몰랐는데,
+              여기서 변환한 메시지로 보내니까 바로 OK 받았어요!"
+            </p>
+            <div className="text-xs text-purple-400">⭐⭐⭐⭐⭐</div>
           </div>
         </div>
       </section>
