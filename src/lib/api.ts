@@ -816,6 +816,39 @@ export async function createBalanceGameComment(
   });
 }
 
+/**
+ * 댓글 수정 요청
+ */
+export interface UpdateCommentData {
+  author_id: string;
+  content: string;
+}
+
+/**
+ * 밸런스 게임 댓글 수정
+ */
+export async function updateBalanceGameComment(
+  commentId: string,
+  data: UpdateCommentData
+): Promise<void> {
+  return apiFetch<void>(`/community/balance/comments/${commentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 밸런스 게임 댓글 삭제
+ */
+export async function deleteBalanceGameComment(
+  commentId: string,
+  authorId: string
+): Promise<void> {
+  return apiFetch<void>(`/community/balance/comments/${commentId}?author_id=${authorId}`, {
+    method: 'DELETE',
+  });
+}
+
 // ============================================
 // 상담 히스토리 API
 // ============================================

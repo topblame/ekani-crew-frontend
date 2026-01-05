@@ -11,6 +11,8 @@ import {
   getBalanceResult,
   voteBalanceGame,
   createBalanceGameComment,
+  updateBalanceGameComment,
+  deleteBalanceGameComment,
   type BalanceGameDetail,
   type BalanceResult,
   type Comment,
@@ -116,6 +118,23 @@ export default function BalanceGameDetailClient({ gameId }: Props) {
   const handleCommentSubmit = async (data: CreateCommentData) => {
     const newComment = await createBalanceGameComment(gameId, data);
     setComments((prev) => [...prev, newComment]);
+  };
+
+  const handleCommentUpdate = async (commentId: string, content: string) => {
+    if (!user?.id) return;
+    await updateBalanceGameComment(commentId, {
+      author_id: user.id,
+      content,
+    });
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, content } : c))
+    );
+  };
+
+  const handleCommentDelete = async (commentId: string) => {
+    if (!user?.id) return;
+    await deleteBalanceGameComment(commentId, user.id);
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   if (authLoading || isLoading) {
@@ -311,6 +330,8 @@ export default function BalanceGameDetailClient({ gameId }: Props) {
         <CommentSection
           comments={comments}
           onSubmit={handleCommentSubmit}
+          onUpdate={handleCommentUpdate}
+          onDelete={handleCommentDelete}
           isLoading={false}
         />
       </div>
