@@ -710,6 +710,7 @@ export interface BalanceGameDetail {
   comments: BalanceGameDetailComment[];
   is_votable: boolean;
   created_at: string;
+  user_choice: 'left' | 'right' | null;
 }
 
 /**
@@ -733,8 +734,9 @@ export async function getBalanceGameList(): Promise<BalanceGameListResponse> {
 /**
  * 밸런스 게임 상세 조회
  */
-export async function getBalanceGameDetail(gameId: string): Promise<BalanceGameDetail> {
-  return apiFetch<BalanceGameDetail>(`/community/balance/${gameId}`);
+export async function getBalanceGameDetail(gameId: string, userId?: string): Promise<BalanceGameDetail> {
+  const params = userId ? `?user_id=${userId}` : '';
+  return apiFetch<BalanceGameDetail>(`/community/balance/${gameId}${params}`);
 }
 
 /**

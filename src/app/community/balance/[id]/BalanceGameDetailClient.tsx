@@ -43,8 +43,15 @@ export default function BalanceGameDetailClient({ gameId }: Props) {
   const loadGame = useCallback(async () => {
     setIsLoading(true);
     try {
-      const gameData = await getBalanceGameDetail(gameId);
+      const gameData = await getBalanceGameDetail(gameId, user?.id);
       setGame(gameData);
+
+      // 이미 투표한 경우 userChoice 설정 및 결과 조회
+      if (gameData.user_choice) {
+        setUserChoice(gameData.user_choice);
+        const resultData = await getBalanceResult(gameId);
+        setResult(resultData);
+      }
 
       // Transform comments from detail response
       const transformedComments: Comment[] = gameData.comments.map(c => ({
@@ -62,7 +69,7 @@ export default function BalanceGameDetailClient({ gameId }: Props) {
     } finally {
       setIsLoading(false);
     }
-  }, [gameId]);
+  }, [gameId, user?.id]);
 
   useEffect(() => {
     void loadGame();
@@ -201,11 +208,24 @@ export default function BalanceGameDetailClient({ gameId }: Props) {
           ) : (
             // Results View (from detail or after voting)
             <div className="space-y-6">
+              {/* 내 투표 표시 */}
+              {userChoice && (
+                <div className="text-center text-sm text-gray-500 bg-gray-50 rounded-xl py-2">
+                  나의 선택: <span className={userChoice === 'left' ? 'text-pink-600 font-bold' : 'text-purple-600 font-bold'}>
+                    {userChoice === 'left' ? game.option_left : game.option_right}
+                  </span>
+                </div>
+              )}
+
               {/* Overall Result */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm font-medium">
-                  <span className="text-pink-600">{game.option_left}</span>
-                  <span className="text-purple-600">{game.option_right}</span>
+                  <span className={`text-pink-600 ${userChoice === 'left' ? 'font-bold' : ''}`}>
+                    {game.option_left} {userChoice === 'left' && '✓'}
+                  </span>
+                  <span className={`text-purple-600 ${userChoice === 'right' ? 'font-bold' : ''}`}>
+                    {userChoice === 'right' && '✓'} {game.option_right}
+                  </span>
                 </div>
                 <div className="h-8 bg-gray-100 rounded-full overflow-hidden flex">
                   <div
