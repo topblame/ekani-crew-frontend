@@ -11,6 +11,7 @@ import {
   MatchRequestResponse,
   MatchNotification,
   ChatRoomPreview,
+  ChatRoomStatus,
 } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/date';
 
@@ -23,6 +24,8 @@ interface ChatRoom {
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
+  status: ChatRoomStatus;
+  partnerLeft: boolean;  // 상대방이 나간 경우
 }
 
 
@@ -79,7 +82,14 @@ export default function ChatListClient() {
 
   // ChatRoomPreview를 ChatRoom으로 변환
   const convertToRoom = useCallback((room: ChatRoomPreview, userId: string): ChatRoom => {
-    const partnerId = room.user1_id === userId ? room.user2_id : room.user1_id;
+    const isUser1 = room.user1_id === userId;
+    const partnerId = isUser1 ? room.user2_id : room.user1_id;
+
+    // 상대방이 나갔는지 확인
+    const partnerLeft =
+      (isUser1 && room.status === 'left_by_user2') ||
+      (!isUser1 && room.status === 'left_by_user1');
+
     return {
       id: room.id,
       partnerId,
@@ -89,6 +99,8 @@ export default function ChatListClient() {
         ? formatRelativeTime(room.latest_message.created_at)
         : formatRelativeTime(room.created_at),
       unreadCount: room.unread_count,
+      status: room.status,
+      partnerLeft,
     };
   }, []);
 
@@ -99,7 +111,18 @@ export default function ChatListClient() {
 
     try {
       const response = await getMyChatRooms(userId);
-      const rooms = response.rooms.map((room) => convertToRoom(room, userId));
+      const isUser1 = (room: ChatRoomPreview) => room.user1_id === userId;
+
+      // 내가 나간 방, closed, blocked 상태는 제외
+      const filteredRooms = response.rooms.filter((room) => {
+        if (room.status === 'closed' || room.status === 'blocked') return false;
+        // 내가 나간 방 제외
+        if (isUser1(room) && room.status === 'left_by_user1') return false;
+        if (!isUser1(room) && room.status === 'left_by_user2') return false;
+        return true;
+      });
+
+      const rooms = filteredRooms.map((room) => convertToRoom(room, userId));
       setChatRooms(rooms);
       previousRoomCountRef.current = rooms.length;
     } catch (err) {
@@ -419,26 +442,33 @@ export default function ChatListClient() {
               <button
                 key={room.id}
                 onClick={() => handleRoomClick(room.id)}
-                className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition text-left"
+                className={`w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition text-left ${room.partnerLeft ? 'opacity-60' : ''}`}
               >
                 {/* 상대방 아바타 */}
-                <div className="w-12 h-12 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${room.partnerLeft ? 'bg-gray-400' : 'bg-gradient-to-r from-pink-400 to-purple-400'}`}>
                   {room.partnerMbti ? room.partnerMbti.slice(0, 2) : '??'}
                 </div>
 
                 {/* 채팅 정보 */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-800">
-                      {room.partnerMbti || `상대방`}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-800">
+                        {room.partnerMbti || `상대방`}
+                      </span>
+                      {room.partnerLeft && (
+                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">나감</span>
+                      )}
+                    </div>
                     <span className="text-xs text-gray-400">{room.lastMessageTime}</span>
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{room.lastMessage}</p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {room.partnerLeft ? '상대방이 채팅방을 나갔습니다' : room.lastMessage}
+                  </p>
                 </div>
 
                 {/* 안 읽은 메시지 */}
-                {room.unreadCount > 0 && (
+                {room.unreadCount > 0 && !room.partnerLeft && (
                   <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0">
                     {room.unreadCount}
                   </div>

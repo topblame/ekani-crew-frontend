@@ -347,11 +347,14 @@ export interface ChatMessageDto {
 /**
  * 채팅방 미리보기 응답
  */
+export type ChatRoomStatus = 'active' | 'left_by_user1' | 'left_by_user2' | 'closed' | 'blocked';
+
 export interface ChatRoomPreview {
   id: string;
   user1_id: string;
   user2_id: string;
   created_at: string;
+  status: ChatRoomStatus;
   latest_message: ChatMessageDto | null;
   unread_count: number;
 }
@@ -494,10 +497,28 @@ export interface ChatWebSocketMessage {
 }
 
 export interface ChatWebSocketResponse {
-  message_id: string;
+  id: string;
   room_id: string;
   sender_id: string;
   content: string;
+}
+
+/**
+ * 채팅 시스템 메시지 타입 (상대방 나감 등)
+ */
+export interface ChatSystemMessage {
+  type: 'partner_left';
+  room_id: string;
+  user_id: string;
+}
+
+/**
+ * 유저 차단
+ */
+export async function blockUser(blockedUserId: string): Promise<void> {
+  return apiFetch<void>(`/user/${blockedUserId}/block`, {
+    method: 'POST',
+  });
 }
 
 // ============================================
@@ -657,7 +678,6 @@ export interface BalanceGame {
   option_left: string;
   option_right: string;
   week_of: string;
-  is_active: boolean;
 }
 
 /**
@@ -711,6 +731,7 @@ export interface BalanceGameDetail {
   comments: BalanceGameDetailComment[];
   is_votable: boolean;
   created_at: string;
+  user_choice: 'left' | 'right' | null;
 }
 
 /**
@@ -734,8 +755,9 @@ export async function getBalanceGameList(): Promise<BalanceGameListResponse> {
 /**
  * 밸런스 게임 상세 조회
  */
-export async function getBalanceGameDetail(gameId: string): Promise<BalanceGameDetail> {
-  return apiFetch<BalanceGameDetail>(`/community/balance/${gameId}`);
+export async function getBalanceGameDetail(gameId: string, userId?: string): Promise<BalanceGameDetail> {
+  const params = userId ? `?user_id=${userId}` : '';
+  return apiFetch<BalanceGameDetail>(`/community/balance/${gameId}${params}`);
 }
 
 /**
@@ -812,6 +834,39 @@ export async function createBalanceGameComment(
   return apiFetch<Comment>(`/community/balance/${gameId}/comments`, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 댓글 수정 요청
+ */
+export interface UpdateCommentData {
+  author_id: string;
+  content: string;
+}
+
+/**
+ * 밸런스 게임 댓글 수정
+ */
+export async function updateBalanceGameComment(
+  commentId: string,
+  data: UpdateCommentData
+): Promise<void> {
+  return apiFetch<void>(`/community/balance/comments/${commentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 밸런스 게임 댓글 삭제
+ */
+export async function deleteBalanceGameComment(
+  commentId: string,
+  authorId: string
+): Promise<void> {
+  return apiFetch<void>(`/community/balance/comments/${commentId}?author_id=${authorId}`, {
+    method: 'DELETE',
   });
 }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { getChatWebSocketUrl, getChatHistory, markRoomAsRead, leaveChatRoom, reportMessage, ChatWebSocketResponse, ReportReason } from '@/lib/api';
+import { getChatWebSocketUrl, getChatHistory, markRoomAsRead, leaveChatRoom, reportMessage, blockUser, ChatWebSocketResponse, ChatSystemMessage, ReportReason } from '@/lib/api';
 import { toDate, formatTime } from '@/lib/date';
 
 interface Message {
@@ -29,6 +29,7 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
   const [error, setError] = useState<string | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [partnerLeft, setPartnerLeft] = useState(false);
 
   // 신고 관련 state
   const [showReportModal, setShowReportModal] = useState(false);
@@ -36,6 +37,11 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
   const [selectedReasons, setSelectedReasons] = useState<ReportReason[]>([]);
   const [isReporting, setIsReporting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
+
+  // 차단 관련 state
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -92,6 +98,12 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
         }));
         setMessages(loadedMessages);
 
+        // 상대방 ID 찾기 (내가 보낸 메시지가 아닌 첫 메시지의 sender_id)
+        const partnerMessage = history.messages.find(msg => msg.sender_id !== userId);
+        if (partnerMessage) {
+          setPartnerId(partnerMessage.sender_id);
+        }
+
         // 채팅방 읽음 처리
         await markRoomAsRead(roomId, userId);
       } catch (err) {
@@ -121,12 +133,21 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
 
     ws.onmessage = (event) => {
       try {
-        const data: ChatWebSocketResponse = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
+
+        // 시스템 메시지 처리 (상대방 나감)
+        if (data.type === 'partner_left') {
+          setPartnerLeft(true);
+          return;
+        }
+
+        // 일반 채팅 메시지 처리
+        const chatData = data as ChatWebSocketResponse;
         const newMessage: Message = {
-          id: data.message_id,
-          senderId: data.sender_id,
-          content: data.content,
-          isMine: data.sender_id === user.id,
+          id: chatData.id,
+          senderId: chatData.sender_id,
+          content: chatData.content,
+          isMine: chatData.sender_id === user.id,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, newMessage]);
@@ -252,6 +273,30 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
     { value: 'OTHER', label: '기타' },
   ];
 
+  // 차단 처리
+  const handleBlockUser = async () => {
+    if (!partnerId) return;
+
+    setIsBlocking(true);
+    try {
+      await blockUser(partnerId);
+      // 차단 후 채팅방 나가기
+      if (user?.id) {
+        await leaveChatRoom(roomId, user.id);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      router.push('/chat');
+    } catch (err) {
+      console.error('차단 실패:', err);
+      setError('차단에 실패했습니다.');
+    } finally {
+      setIsBlocking(false);
+      setShowBlockModal(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -285,13 +330,25 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
             <div className="flex items-center gap-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  isConnected ? 'bg-green-500' : 'bg-gray-400'
+                  partnerLeft ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-gray-400'
                 }`}
               ></span>
-              <span className="text-sm text-gray-500">
-                {isConnecting ? '연결 중...' : isConnected ? '연결됨' : '연결 끊김'}
+              <span className={`text-sm ${partnerLeft ? 'text-red-500' : 'text-gray-500'}`}>
+                {partnerLeft ? '상대방이 나갔습니다' : isConnecting ? '연결 중...' : isConnected ? '연결됨' : '연결 끊김'}
               </span>
             </div>
+            {/* 차단 버튼 */}
+            {partnerId && (
+              <button
+                onClick={() => setShowBlockModal(true)}
+                className="text-gray-400 hover:text-red-500 transition"
+                title="상대방 차단"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </button>
+            )}
             <button
               onClick={() => setShowLeaveModal(true)}
               className="text-gray-400 hover:text-red-500 transition"
@@ -366,25 +423,31 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
 
         {/* 입력 영역 */}
         <div className="px-4 py-3 border-t border-gray-100">
-          <div className="flex gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="메시지를 입력하세요..."
-              disabled={!isConnected}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-2xl resize-none focus:outline-none focus:border-purple-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              rows={1}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!isConnected || !input.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-pink-400 to-purple-400 text-white rounded-2xl font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              전송
-            </button>
-          </div>
+          {partnerLeft ? (
+            <div className="text-center text-gray-400 py-2">
+              상대방이 채팅방을 나가서 메시지를 보낼 수 없습니다.
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="메시지를 입력하세요..."
+                disabled={!isConnected}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-2xl resize-none focus:outline-none focus:border-purple-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                rows={1}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!isConnected || !input.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-pink-400 to-purple-400 text-white rounded-2xl font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                전송
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -484,6 +547,35 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 차단 확인 모달 */}
+      {showBlockModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">상대방 차단</h3>
+            <p className="text-gray-600 mb-6">
+              이 사용자를 차단하시겠습니까?<br />
+              차단하면 서로 매칭되지 않으며 채팅방에서 나가게 됩니다.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBlockModal(false)}
+                disabled={isBlocking}
+                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300 transition disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleBlockUser}
+                disabled={isBlocking}
+                className="flex-1 py-3 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition disabled:opacity-50"
+              >
+                {isBlocking ? '차단 중...' : '차단하기'}
+              </button>
+            </div>
           </div>
         </div>
       )}
