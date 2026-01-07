@@ -379,6 +379,8 @@ export async function getMyChatRooms(userId: string): Promise<MyChatRoomsRespons
  * 채팅 히스토리 응답
  */
 export interface ChatHistoryResponse {
+  user1_id: string;
+  user2_id: string;
   messages: ChatMessageDto[];
 }
 

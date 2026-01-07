@@ -191,13 +191,23 @@ export default function MbtiTestClient() {
               {error}
             </div>
           )}
-          <button
-            onClick={handleStart}
-            disabled={isLoading || isCheckingAuth || !isLoggedIn}
-            className="cursor-pointer px-8 py-4 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading || isCheckingAuth ? '로딩 중...' : '검사 시작하기'}
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleStart}
+              disabled={isLoading || isCheckingAuth || !isLoggedIn}
+              className="cursor-pointer px-8 py-4 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading || isCheckingAuth ? '로딩 중...' : '검사 시작하기'}
+            </button>
+            {/* TODO: 이어하기 기능 - 백엔드 API 추가 필요 (GET /mbti-test/session/current) */}
+            <button
+              disabled
+              className="cursor-not-allowed px-8 py-3 bg-gray-200 text-gray-400 rounded-full font-medium"
+              title="진행 중인 검사가 없습니다"
+            >
+              이어하기 (준비 중)
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -272,12 +282,28 @@ export default function MbtiTestClient() {
               <p className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
                 {mbtiResult}
               </p>
-              <button
-                onClick={() => router.push('/chat')}
-                className="mt-4 px-6 py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-full font-medium hover:opacity-90 transition"
-              >
-                MBTI로 매칭하기
-              </button>
+              <div className="flex flex-col gap-2 mt-4">
+                <button
+                  onClick={() => router.push('/chat')}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-full font-medium hover:opacity-90 transition"
+                >
+                  MBTI로 매칭하기
+                </button>
+                <button
+                  onClick={() => {
+                    setIsStarted(false);
+                    setIsCompleted(false);
+                    setMessages([]);
+                    setSessionId('');
+                    setQuestionNumber(1);
+                    setMbtiResult(null);
+                    setError('');
+                  }}
+                  className="px-6 py-2 text-purple-500 hover:text-purple-700 font-medium transition"
+                >
+                  다시하기
+                </button>
+              </div>
             </div>
           </div>
         )}

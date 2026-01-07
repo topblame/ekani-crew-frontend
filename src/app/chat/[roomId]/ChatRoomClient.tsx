@@ -98,11 +98,9 @@ export default function ChatRoomClient({ roomId }: ChatRoomClientProps) {
         }));
         setMessages(loadedMessages);
 
-        // 상대방 ID 찾기 (내가 보낸 메시지가 아닌 첫 메시지의 sender_id)
-        const partnerMessage = history.messages.find(msg => msg.sender_id !== userId);
-        if (partnerMessage) {
-          setPartnerId(partnerMessage.sender_id);
-        }
+        // 상대방 ID 설정 (채팅방 참여자 중 내가 아닌 사람)
+        const partner = history.user1_id === userId ? history.user2_id : history.user1_id;
+        setPartnerId(partner);
 
         // 채팅방 읽음 처리
         await markRoomAsRead(roomId, userId);
