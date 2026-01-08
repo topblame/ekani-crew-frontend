@@ -37,11 +37,18 @@ export async function apiFetch<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include', // 쿠키 포함
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      credentials: 'include', // 쿠키 포함
+      headers,
+    });
+  } catch (fetchError: any) {
+    console.error('Network Error:', fetchError);
+    console.error('Failed to connect to:', url);
+    throw new Error(`Network Error: Cannot connect to server at ${url}. ${fetchError.message}`);
+  }
 
   if (!response.ok) {
     const errorDetails = {
@@ -50,6 +57,15 @@ export async function apiFetch<T>(
       url: url,
     };
     console.error('API Error:', errorDetails);
+
+    // 응답 본문도 출력 (에러 메시지가 있을 수 있음)
+    try {
+      const errorBody = await response.text();
+      console.error('Error body:', errorBody);
+    } catch (e) {
+      console.error('Could not read error body');
+    }
+
     throw new Error(`API Error: ${response.statusText} (${response.status}) - ${endpoint}`);
   }
 
@@ -178,6 +194,17 @@ export async function convertMessage(data: ConvertRequest): Promise<ConvertRespo
  */
 export type MbtiTestType = 'human' | 'ai';
 
+
+export interface Turn {
+  turn_number: number;
+  question: string;
+  answer: string;
+  dimension: string;
+  scores: Record<string, number>;
+  side: string;
+  score: number;
+}
+
 export interface MbtiTestSession {
   id: string;
   user_id: string;
@@ -187,6 +214,7 @@ export interface MbtiTestSession {
   questions: string[];
   answers: Record<string, unknown>[];
   current_question_index: number;
+  turns?: Turn[];
 }
 
 export interface MbtiMessage {
@@ -261,6 +289,62 @@ export async function getMbtiResult(sessionId: string): Promise<MbtiResultRespon
   });
 }
 
+
+/**
+ * 진행 중인 MBTI 테스트 상태 조회
+ */
+export interface MbtiTestStatusResponse {
+  status: 'in_progress' | 'no_test_found';
+  session?: MbtiTestSession;
+  messages?: { role: 'user' | 'assistant'; content: string }[];
+  next_question?: MbtiMessage;
+}
+
+export async function getMbtiTestStatus(): Promise<MbtiTestStatusResponse> {
+  return apiFetch<MbtiTestStatusResponse>('/mbti-test/status', {
+    method: 'POST',
+  });
+}
+
+/**
+ * 진행 중인 MBTI 테스트 이어하기
+ */
+export interface ResumeMbtiTestResponse {
+  status: 'resumed';
+  session: MbtiTestSession;
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  next_question: MbtiMessage;
+}
+
+export async function resumeMbtiTest(): Promise<ResumeMbtiTestResponse> {
+  return apiFetch<ResumeMbtiTestResponse>('/mbti-test/resume', {
+    method: 'POST',
+  });
+}
+
+/**
+ * MBTI 테스트 새로하기 (기존 세션 삭제 후 새로 시작)
+ */
+export interface RestartMbtiTestResponse {
+  status: 'restarted';
+  session: MbtiTestSession;
+  first_question: MbtiMessage;
+}
+
+export async function restartMbtiTest(testType: MbtiTestType = 'human'): Promise<RestartMbtiTestResponse> {
+  return apiFetch<RestartMbtiTestResponse>(`/mbti-test/restart?test_type=${testType}`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 진행 중인 MBTI 테스트 삭제
+ */
+export async function deleteInProgressTest(): Promise<void> {
+  return apiFetch<void>('/mbti-test/session', {
+    method: 'DELETE',
+  });
+}
 // ============================================
 // 매칭 API
 // ============================================

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { startMbtiTest, checkAuthStatus, answerMbtiQuestion, getMbtiResult, resumeMbtiTest, restartMbtiTest, getMbtiTestStatus } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { startMbtiTest, checkAuthStatus, answerMbtiQuestion, getMbtiResult } from '@/lib/api';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -24,6 +24,7 @@ export default function MbtiTestClient() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [mbtiResult, setMbtiResult] = useState<string | null>(null);
+  const [hasInProgressTest, setHasInProgressTest] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +72,20 @@ export default function MbtiTestClient() {
     checkUser();
   }, []);
 
+  // 진행 중인 테스트 확인
+  useEffect(() => {
+    const checkInProgress = async () => {
+      if (!isLoggedIn) return;
+      try {
+        const status = await getMbtiTestStatus();
+        setHasInProgressTest(status.status === 'in_progress');
+      } catch {
+        setHasInProgressTest(false);
+      }
+    };
+    checkInProgress();
+  }, [isLoggedIn]);
+
   const handleStart = async () => {
     setIsLoading(true);
     setError('');
@@ -88,6 +103,114 @@ export default function MbtiTestClient() {
       } else {
         setError(err.message || 'MBTI 테스트 시작 중 오류가 발생했습니다.');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResume = async () => {
+    setIsLoading(true);
+    setError('');
+
+    console.log('\n========== RESUME FLOW START ==========');
+
+    try {
+      console.log('[FRONTEND] Calling resumeMbtiTest API...');
+      const response = await resumeMbtiTest();
+
+      console.log('[FRONTEND] ===== RAW API RESPONSE =====');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('[FRONTEND] ===========================');
+
+      console.log('[FRONTEND] Resume response received:');
+      console.log('  - Status:', response.status);
+      console.log('  - Session ID:', response.session?.id);
+      console.log('  - Session turns:', response.session?.turns?.length || 0);
+      console.log('  - Messages field exists:', 'messages' in response);
+      console.log('  - Messages count:', response.messages?.length || 0);
+      console.log('  - Messages data:', response.messages);
+      console.log('  - Next question:', response.next_question?.content);
+
+      setSessionId(response.session.id);
+
+      // 백엔드에서 받은 messages 사용 (이전 대화 내용)
+      let restoredMessages: Message[] = [];
+
+      // messages 필드가 있는지 확인
+      if (response.messages && Array.isArray(response.messages)) {
+        console.log('[FRONTEND] Using messages field from API');
+        restoredMessages = response.messages.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content || '',
+        }));
+      }
+      // messages 필드가 없으면 session.turns에서 변환
+      else if (response.session?.turns && Array.isArray(response.session.turns)) {
+        console.log('[FRONTEND] Converting from session.turns (fallback)');
+        response.session.turns.forEach((turn: any) => {
+          restoredMessages.push({ role: 'assistant', content: turn.question });
+          restoredMessages.push({ role: 'user', content: turn.answer });
+        });
+      } else {
+        console.warn('[FRONTEND] No messages or turns found in response!');
+      }
+
+      console.log('[FRONTEND] Restored messages count:', restoredMessages.length);
+
+      // 각 메시지 상세 출력
+      restoredMessages.forEach((msg, i) => {
+        console.log(`[FRONTEND] Message ${i}:`, {
+          role: msg.role,
+          content: msg.content,
+          contentLength: msg.content?.length || 0,
+          contentType: typeof msg.content,
+        });
+      });
+
+      // 다음 질문 추가
+      if (response.next_question && response.next_question.content) {
+        restoredMessages.push({ role: 'assistant', content: response.next_question.content });
+        console.log('[FRONTEND] Added next_question, total messages now:', restoredMessages.length);
+      }
+
+      console.log('[FRONTEND] Final messages array:', restoredMessages);
+      console.log('[FRONTEND] Setting messages state...');
+
+      setMessages(restoredMessages);
+      setQuestionNumber(response.session.current_question_index || Math.floor(restoredMessages.length / 2));
+      setIsStarted(true);
+      setHasInProgressTest(false);
+
+      console.log('[FRONTEND] Messages state updated successfully');
+      console.log('========== RESUME FLOW END ==========\n');
+    } catch (err: any) {
+      console.error('[FRONTEND] Resume error:', err);
+      if (err.message?.includes('404')) {
+        setError('진행 중인 테스트를 찾을 수 없습니다.');
+        setHasInProgressTest(false);
+      } else if (err.message?.includes('401')) {
+        setError('로그인이 필요합니다.');
+      } else {
+        setError(err.message || '테스트 재개 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRestart = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await restartMbtiTest('human');
+      setSessionId(response.session.id);
+      setMessages([{ role: 'assistant', content: response.first_question.content }]);
+      setQuestionNumber(0);
+      setIsStarted(true);
+      setHasInProgressTest(false);
+    } catch (err: any) {
+      setError(err.message || '테스트 재시작 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -192,21 +315,32 @@ export default function MbtiTestClient() {
             </div>
           )}
           <div className="flex flex-col gap-3">
-            <button
-              onClick={handleStart}
-              disabled={isLoading || isCheckingAuth || !isLoggedIn}
-              className="cursor-pointer px-8 py-4 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading || isCheckingAuth ? '로딩 중...' : '검사 시작하기'}
-            </button>
-            {/* TODO: 이어하기 기능 - 백엔드 API 추가 필요 (GET /mbti-test/session/current) */}
-            <button
-              disabled
-              className="cursor-not-allowed px-8 py-3 bg-gray-200 text-gray-400 rounded-full font-medium"
-              title="진행 중인 검사가 없습니다"
-            >
-              이어하기 (준비 중)
-            </button>
+            {!hasInProgressTest ? (
+              <button
+                onClick={handleStart}
+                disabled={isLoading || isCheckingAuth || !isLoggedIn}
+                className="cursor-pointer px-8 py-4 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading || isCheckingAuth ? '로딩 중...' : '검사 시작하기'}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleResume}
+                  disabled={isLoading || isCheckingAuth}
+                  className="cursor-pointer px-8 py-4 bg-gradient-to-r from-blue-400 to-purple-400 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? '로딩 중...' : '이어하기 ▶️'}
+                </button>
+                <button
+                  onClick={handleRestart}
+                  disabled={isLoading || isCheckingAuth}
+                  className="cursor-pointer px-8 py-3 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? '로딩 중...' : '새로하기 🔄'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -237,22 +371,29 @@ export default function MbtiTestClient() {
           onScroll={handleScroll}
           className="h-96 overflow-y-auto p-4 space-y-4"
         >
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          {messages.map((msg, idx) => {
+            console.log(`[RENDER] Message ${idx}:`, msg);
+            console.log(`[RENDER] - role: ${msg.role}`);
+            console.log(`[RENDER] - content: "${msg.content}"`);
+            console.log(`[RENDER] - content length: ${msg.content?.length || 0}`);
+
+            return (
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap ${
-                  msg.role === 'user'
-                    ? 'bg-purple-400 text-white rounded-br-sm'
-                    : 'bg-gray-100 text-gray-700 rounded-bl-sm'
-                }`}
+                key={idx}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {msg.content}
+                <div
+                  className={`max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap ${
+                    msg.role === 'user'
+                      ? 'bg-purple-400 text-white rounded-br-sm'
+                      : 'bg-gray-100 text-gray-700 rounded-bl-sm'
+                  }`}
+                >
+                  {msg.content || '[내용 없음]'}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {isLoading && (
             <div className="flex justify-start">
               <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-gray-100 text-gray-700 rounded-bl-sm">
