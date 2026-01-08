@@ -371,7 +371,6 @@ export default function MbtiTestClient() {
           onScroll={handleScroll}
           className="h-96 overflow-y-auto p-4 space-y-4"
         >
-          {console.log('[RENDER] Rendering messages:', messages.length)}
           {messages.map((msg, idx) => {
             console.log(`[RENDER] Message ${idx}:`, msg);
             console.log(`[RENDER] - role: ${msg.role}`);
